@@ -3,22 +3,24 @@ if (JS_ENV === 'mock') {
     Mock = require('./mock');
 }
 
-console.log(Mock);
-
 class api {
     constructor(config) {
         this._api_config = config || [];
-        if (JS_ENV === 'mock') {
-            this.mock = new Mock(config);
-        }
-
-        if (config && config.length > 0) {
-            config.forEach(item => {
-                this[item.name] = data => {
-                    return this._api_request(item.url, data, item.type);
-                }
-            })
-            console.log(this);
+        if (JS_ENV === 'mock' && Mock) {
+            this._mock = new Mock(config);
+            if (config && config.length > 0) {
+                config.forEach(item => {
+                    this[item.name] = () => (this._mock.get_data(item.name))
+                });
+            }
+        } else {
+            if (config && config.length > 0) {
+                config.forEach(item => {
+                    this[item.name] = data => {
+                        return this._api_request(item.url, data, item.type);
+                    }
+                });
+            }
         }
     }
 

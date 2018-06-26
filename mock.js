@@ -80,7 +80,7 @@ class Mock {
         this.data_list[name] = data;
     }
 
-    get_data(name, api_data) {
+    get_data(name) {
         for (let i = 0; i < this.model_config.length; i++) {
             if (this.model_config[i].name === name) {
                 /*使用Promise模拟数据异步请求*/
