@@ -24,11 +24,11 @@ mock.js 是一个用于根据预设的环境变量，自动生成虚拟数据或
 ```javascript
 export default [
   {
-        name: 'my_list',
+        name: 'user_list',
         count: 10,
-        url: `http://test.mock.com/get_my_list`,
+        url: `http://test.mock.com/get_user_list`,
         get_api_data: (res) => {
-            const data = res.data.user_permissions;
+            const data = res.data.user_list;
             for (let i = 0; i < data.length; i++) {
                 data[i].addTime = new Date(data[i].addTime * 1000).toLocaleDateString().split('/').join('-');
             }
@@ -37,19 +37,18 @@ export default [
         data: {
             id: {type: 'Number', unique: true},
             name: {type: 'String', unique: true},
-            date: {type: 'String', dataRange: ['2018-06-02', '2018-06-03', '2018-06-04', '2018-06-05', '2018-06-06']},
-            level: {type: 'String', dataRange: ['正常', '较敏感', '敏感']},
-            group: {type: 'String', unique: true},
-            path: 'String'
+            born: {type: 'String', dataRange: ['2018-06-02', '2018-06-03', '2018-06-04', '2018-06-05', '2018-06-06']},
+            sex: {type: 'number', dataRange: [0, 1]},
+            class: 'String'
         },
         api_to_mock_alias: {
-            pathId: 'id',
-            pathName: 'name',
-            addTime: 'date',
-            groupName: 'group',
-            permissionName: 'level',
-            hadoopPath: 'path'
+            userId: 'id',
+            userName: 'name',
+            born: 'born',
+            sex: 'sex',
+            class: 'class'
         }
     }
 ]
 ```
+
