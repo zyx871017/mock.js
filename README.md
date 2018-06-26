@@ -52,3 +52,57 @@ export default [
 ]
 ```
 
+在你的项目中建立一个你想用于接口定义的文件，比如request.js
+这里我们不仅仅只是做了mock.js的封装用于虚拟数据获取，同时我们将接口定义也做了封装，方便与数据获取后自动将后端定义的数据字段转译成我们开发时定义的数据字段。
+
+#### api.js
+
+如果我们同时需要插件自动将数据转译的话，我们可以将api.js和mock_config引入到request.js中
+
+```javascript
+import Api from './api.js';
+import mock_config from './mock_config.js';
+```
+
+此时，需要的文件便成功引入到项目中，我们初始化一个api对象，并将mock结构传入对象中，api.js可以自动解析结构，在需要时，获取我们想要的数据。
+
+```javascript
+const api = new Api(mock_config);
+
+/*我们可以在这里定义其他需要的接口，将所有请求整合成一个对象。
+api.do_other_request = ()=>{
+   ajax(url).then(res=>(ok)
+}*/
+
+export default api;
+```
+
+此时，我们为api.js注册了结构中的用户数据，api会自动暴露一个以结构中name字段命名的方法
+```javascript
+   const users = api.user_list();
+   console.log(users);
+```
+这样我们只需在我们需要的文件中引入request.js文件，并调用对应的数据获取方法即可。
+
+#### mock.js
+如果我们只希望插件提供数据虚拟方法，但是接口定义要在别的地方进行，name，我们可以在request.js中这样做
+
+```javascript
+import Mock from './mock.js';
+import mock_config from './mock_config.js';
+
+const mock = new Mock(mock_config);
+
+export default {
+   get_user_list: () => {
+      return mock.get('user_list').then(res=>{
+         console.log(res);
+         return res;
+      })
+   }
+}
+```
+
+###结构定义
+
+在mock_config.js中我们根据需要可以定义自己的数据结构和
