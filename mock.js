@@ -87,7 +87,12 @@
     }
 
     function initAllData(config) {
-
+        var configLength = config.length;
+        var initData = {};
+        for (var i = 0; i < configLength; i++) {
+            initData[config[i].name] = initModalData(config[i]);
+        }
+        return initData
     }
 
     function Mock(config) {
