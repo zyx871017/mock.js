@@ -8,7 +8,7 @@
  *          name: 'String',
  *          age: {
  *              type: 'Number'||'String'||'Boolean'||'Object'||'Null',
- *              dataRange: 范围随机选择{lowest: 18, biggest: 30}||[18,19,20,...,30],
+ *              dataRange: 范围随机选择{min: 18, max: 30}||[18,19,20,...,30],
  *              data: 对应数据,
  *              unique: Boolean //是否是非重复数据，可以在后面自动加上序号，
  *          },
@@ -48,133 +48,78 @@
  * }
  * **/
 
-class Mock {
-    constructor(config) {
-        this.model_config = config || [];
-        this.data_list = {};
-    }
+(function () {
+    var SPECIAL_SYMBOL = '~`!@#$%^&*()_+-=[]{}<>?/';
 
-    add_model(obj) {
-        for (let i = 0; i < this.model_config.length; i++) {
-            if (this.model_config[i].name = obj.name) {
-                console.warn('已存入相同名称的模型！');
-                return;
-            }
-        }
-        this.model_config.push(obj);
-    }
-
-    define_model_config(config) {
-        this.model_config = config;
-    }
-
-    edit_model(obj) {
-        for (let i = 0; i < this.model_config.length; i++) {
-            if (this.model_config[i].name = obj) {
-                this.model_config[i] = Object.assign(this.model_config[i], obj);
-            }
-        }
-    }
-
-    save_data(data, name) {
-        this.data_list[name] = data;
-    }
-
-    get_data(name) {
-        for (let i = 0; i < this.model_config.length; i++) {
-            if (this.model_config[i].name === name) {
-                /*使用Promise模拟数据异步请求*/
-                return new Promise((resolve, reject) => {
-                    /*判断想要获取的数据是否已经初始化过，如果初始化过，返回存储的数据，否则初始化数据并返回*/
-                    if (this.data_list[name]) {
-                        resolve(this.data_list[name]);
-                    } else {
-                        this.data_list[name] = this._get_single_data(this.model_config[i].data, this.model_config[i].count);
-                        resolve(this.data_list[name]);
-                    }
-                });
-            }
-        }
-        console.warn('没有找到需要的数据！');
-    }
-
-    _parse_alias(alias, res) {
-        if (res instanceof Array) {
-            return res.map(item => {
-                return this._parse_alias(alias, item);
-            });
-        } else if (res instanceof Object) {
-            const obj = {};
-            Object.keys(res).forEach(key => {
-                const mock_key = alias[key] || key;
-                obj[mock_key] = this._parse_alias(alias, res[key]);
-            });
-            return obj;
+    function getDataFromRange(dataRange, fixed) {
+        if (dataRange instanceof Array) {
+            var arrayLength = dataRange.length;
+            return dataRange[Math.floor(Math.random() * arrayLength)];
         } else {
-            return res;
+            var min = dataRange.min;
+            var max = dataRange.max;
+            fixed = fixed || 0;
+            var num = min + Math.floor(Math.random() * (max - min))
+            return parseFloat(num.toFixed(fixed));
         }
     }
 
-    /**针对每一个model生成一组数据*/
-    _get_single_data(model, count) {
-        const keys = Object.keys(model);
-        const result = [];
-        for (let i = 1; i <= count; i++) {
-            let obj = {};
-            for (let key_index = 0; key_index < keys.length; key_index++) {
-                const key = keys[key_index];
-                if (typeof model[key] === 'string') {
-                    obj = Object.assign(obj, this._get_obj(key, model[key]));
-                } else {
-                    if (!model[key].type) {
-                        throw new Error('type is required attribute');
-                    }
-                    const data = model[key].data;
-                    const unique = model[key].unique || false;
-                    const dataRange = model[key].dataRange;
-                    if (unique) {
-                        obj = Object.assign(obj, this._get_obj(key, model[key].type, true, i));
-                    }
-                    if (dataRange instanceof Array) {
-                        obj[key] = dataRange[Math.floor(Math.random() * dataRange.length)];
-                    } else if (dataRange instanceof Object) {
-                        const low = dataRange.lowest;
-                        const big = dataRange.biggest;
-                        obj[key] = low + Math.floor(Math.random() * (big - low));
-                    }
-                    if (typeof data !== 'undefined') {
-                        obj[key] = this._parse_data(model[key]);
-                    }
-                }
-            }
-            result.push(obj);
+    function getStringData(name, maxLength, minLength, hasSpecialSymbol) {
+        minLength = minLength || 0;
+        if (hasSpecialSymbol) {
+            name += SPECIAL_SYMBOL;
+        }
+        var nameLength = name.length;
+        var result = '';
+        var stringLength = minLength + Math.floor(Math.random() * (maxLength - minLength));
+        for (var i = 0; i < stringLength; i++) {
+            result += name[Math.floor(Math.random() * nameLength)];
         }
         return result;
     }
 
-    _parse_data(obj) {
-        if (typeof obj.data !== 'object') {
-            return obj.data;
-        }
-        if (obj.type === 'Array') {
-            this._get_single_data(obj.data, obj.count);
-        }
+    function getBooleanData() {
+        return Math.random() > 0.5;
     }
 
-    _get_obj(key, type, unique, index) {
-        const obj = {};
-        switch (type) {
-            case 'String' :
-                obj[key] = key + (unique ? index : '');
-                return obj;
-            case 'Number':
-                obj[key] = unique ? index : Math.ceil(Math.random() * 10);
-                return obj;
-            case 'Boolean':
-                obj[key] = Math.random() > 0.5 ? true : false;
-                return obj;
-        }
-    }
-}
+    function initModalData(obj) {
 
-module.exports = Mock;
+    }
+
+    function initAllData(config) {
+
+    }
+
+    function Mock(config) {
+        this.config = config || [];
+        this.dataList = initAllData(config);
+    }
+
+    /**
+     * 添加一个新的modal定义
+     * */
+    Mock.prototype.addModel = function (obj) {
+        var configLength = this.config.length;
+        for (var i = 0; i < configLength; i++) {
+            if (this.config[i].name === obj.name) {
+                console.error('已经定义了相同名称的modal，或许你的模型定义名称有问题...');
+                return;
+            }
+        }
+        this.config.push(obj);
+    };
+
+    /**
+     * 重新定义所有模型，这个方法会覆盖掉之前定义的所有模型
+     * **/
+    Mock.prototype.defineModelConfig = function (config) {
+        if (!config) {
+            console.error('没有传入对应的config类型...');
+            return;
+        }
+        this.config = config;
+        this.dataList = {};
+    };
+
+    module.exports = Mock;
+})();
