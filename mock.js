@@ -74,7 +74,7 @@
                 }
 
                 if (hasDontEnumBug) {
-                    for (var i=0; i < dontEnumsLength; i++) {
+                    for (var i = 0; i < dontEnumsLength; i++) {
                         if (hasOwnProperty.call(obj, dontEnums[i])) result.push(dontEnums[i]);
                     }
                 }
@@ -94,12 +94,27 @@
             var min = dataRange.min;
             var max = dataRange.max;
             fixed = fixed || 0;
-            var num = min + Math.floor(Math.random() * (max - min))
+            var num = min + Math.floor(Math.random() * (max - min));
             return parseFloat(num.toFixed(fixed));
         }
     }
 
-    function getStringData(name, maxLength, minLength, hasSpecialSymbol) {
+    function getNumberData(data, index) {
+        if (data.data) {
+            return data.data;
+        }
+        if (data.dataRange) {
+            var fixed = data.fixed || 0;
+            return getDataFromRange(data.dataRange, fixed);
+        }
+        return index;
+    }
+
+    function getStringDataWithRange(arr) {
+        return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function getStringDataWithLength(name, maxLength, minLength, hasSpecialSymbol) {
         minLength = minLength || 0;
         if (hasSpecialSymbol) {
             name += SPECIAL_SYMBOL;
@@ -117,10 +132,86 @@
         return Math.random() > 0.5;
     }
 
+    function verifyOption(obj) {
+        if (!obj.count) {
+            console.error('没有设置该数据的数量，请在对应数据内部设置count...');
+            return false;
+        }
+        if (!obj.data) {
+            console.error('没有定义该表的数据格式，请在对应数据内部设置data...');
+            return false;
+        }
+        return true;
+    }
+
+    function getStringData(data, name, index) {
+        if (data.data) {
+            if (data.unique) {
+                return data.data + index;
+            }
+            return data.data;
+        }
+        if (data.dataRange) {
+            if (data.dataRange instanceof Array) {
+                return getStringDataWithRange(data.dataRange);
+            } else {
+                var key = data.data || name;
+                var maxLength = data.dataRange.max;
+                var minLength = data.dataRange.min;
+                return getStringDataWithLength(key, maxLength, minLength, data.hasSpecialSymbol);
+            }
+        } else {
+            return name + index;
+        }
+    }
+
+    function getObjData(name, obj, index) {
+        var keys = Object.keys(obj);
+        var keysLength = keys.length;
+        var result = [];
+        for (var i = 0; i < keysLength; i++) {
+            var key = keys[i];
+            var data = obj[key];
+            if (data instanceof Object) {
+                switch (data.type) {
+                    case 'String': {
+                        result[key] = getStringData(data, key, index);
+                        break;
+                    }
+                    case 'Number':
+                        result[key] = getNumberData(data, index);
+                        break;
+                    case 'boolean':
+                        result[key] = getBooleanData();
+                        break;
+                    case 'Object':
+                        result[key] = getObjData(name, data, index);
+                        break;
+                    case 'Array':
+                        result[key] = initModalData(data);
+                        break;
+                    default:
+                        break;
+                }
+            } else if (obj[key] === 'Number') {
+                result[key] = index;
+            } else {
+                result[key] = key + index;
+            }
+        }
+        return result;
+    }
+
     function initModalData(obj) {
-        var count = obj.count;
-        var dataObj = obj.data;
-        var keys = Object.keys(dataObj);
+        if (!verifyOption(obj)) {
+            return {};
+        }
+        var count = obj.count || 1,
+            result = [];
+        for (var i = 0; i < count; i++) {
+            result.push(getObjData(obj.name, obj.data, i))
+        }
+        return result;
     }
 
     function initAllData(config) {
@@ -149,6 +240,7 @@
             }
         }
         this.config.push(obj);
+        this.dataList[obj.name] = initModalData(obj);
     };
 
     /**
@@ -159,8 +251,12 @@
             console.error('没有传入对应的config类型...');
             return;
         }
-        this.config = config;
-        this.dataList = {};
+        this.config = config || [];
+        this.dataList = initAllData(config);
+    };
+
+    Mock.prototype.getData = function (name) {
+        
     };
 
     module.exports = Mock;
