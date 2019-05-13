@@ -49,6 +49,9 @@
  * **/
 
 (function () {
+    require('@babel/polyfill');
+    var request = require('./request');
+
     if (!Object.keys) {
         Object.keys = (function () {
             var hasOwnProperty = Object.prototype.hasOwnProperty,
@@ -82,7 +85,6 @@
             }
         })()
     }
-
 
     var SPECIAL_SYMBOL = '~`!@#$%^&*()_+-=[]{}<>?/';
 
@@ -168,7 +170,7 @@
     function getObjData(name, obj, index) {
         var keys = Object.keys(obj);
         var keysLength = keys.length;
-        var result = [];
+        var result = {};
         for (var i = 0; i < keysLength; i++) {
             var key = keys[i];
             var data = obj[key];
@@ -185,7 +187,7 @@
                         result[key] = getBooleanData();
                         break;
                     case 'Object':
-                        result[key] = getObjData(name, data, index);
+                        result[key] = getObjData(name, data.data, index);
                         break;
                     case 'Array':
                         result[key] = initModalData(data);
@@ -256,7 +258,122 @@
     };
 
     Mock.prototype.getData = function (name) {
-        
+        var configList = this.config;
+        var configLength = configList.length;
+        var configIndex = 0;
+        for (var i = 0; i < configLength; i++) {
+            if (configList[i].name === name) {
+                if (configList[i].url) {
+                    return request(configList[i].url, configList[i].requestData, 'get');
+                }
+                configIndex = i;
+                break;
+            }
+        }
+        if (this.dataList[name]) {
+            var config = configList[configIndex];
+            if (config.handleMockData) {
+                return Promise.resolve(config.handleMockData(this.dataList[name]));
+            }
+            return Promise.resolve(this.dataList[name]);
+        } else {
+            return Promise.reject({status: 404, msg: '未找到对应数据'});
+        }
+    };
+
+    Mock.prototype.addData = function (name, data) {
+        var configList = this.config;
+        var configLength = configList.length;
+        var configIndex = 0;
+        for (var i = 0; i < configLength; i++) {
+            if (configList[i].name === name) {
+                if (configList[i].url) {
+                    return request(configList[i].url, data, 'post');
+                }
+                configIndex = i;
+                break;
+            }
+        }
+        if (this.dataList[name]) {
+            this.dataList[name].push(data);
+            return Promise.resolve({status: 0, msg: '添加成功'});
+        } else {
+            return Promise.reject({status: 404, msg: '未找到对应数据表'});
+        }
+    };
+
+    function getUniqueKey(config) {
+        var keys = Object.keys(config);
+        var keyLength = keys.length;
+        for (var i = 0; i < keyLength; i++) {
+            var key = keys[i];
+            if (config[key].unique) {
+                return key;
+            }
+        }
+        return null;
+    }
+
+    Mock.prototype.updateData = function (name, data) {
+        var configList = this.config;
+        var configLength = configList.length;
+        var uniqueKey = '';
+        for (var i = 0; i < configLength; i++) {
+            if (configList[i].name === name) {
+                if (configList[i].url) {
+                    return request(configList[i].url, data, 'post');
+                }
+                uniqueKey = getUniqueKey(configList[i].data);
+                if (!uniqueKey) {
+                    return Promise.reject({status: 402, msg: '该数据表没有唯一主键，请对需要设置唯一主键的字段添加"unique:true"...'})
+                }
+                break;
+            }
+        }
+        if (this.dataList[name]) {
+            var dataArr = this.dataList[name];
+            var dataLength = dataArr.length;
+            for (var i = 0; i < dataLength; i++) {
+                if (dataArr[i][uniqueKey] === data[uniqueKey]) {
+                    dataArr[i] = data;
+                    return Promise.resolve({status: 0, msg: '修改成功'});
+                }
+            }
+            return Promise.reject({status: 403, msg: '未找到对应数据...'});
+        } else {
+            return Promise.reject({status: 404, msg: '未找到对应数据表...'});
+        }
+    };
+
+    Mock.prototype.deleteData = function (name, data) {
+        var configList = this.config;
+        var configLength = configList.length;
+        var uniqueKey = '';
+        for (var i = 0; i < configLength; i++) {
+            if (configList[i].name === name) {
+                if (configList[i].url) {
+                    return request(configList[i].url, data, 'post');
+                }
+                uniqueKey = getUniqueKey(configList[i].data);
+                if (!uniqueKey) {
+                    return Promise.reject({status: 402, msg: '该数据表没有唯一主键，请对需要设置唯一主键的字段添加"unique:true"...'})
+                }
+                break;
+            }
+        }
+        if (this.dataList[name]) {
+            var dataArr = this.dataList[name];
+            var dataLength = dataArr.length;
+            for (var i = 0; i < dataLength; i++) {
+                if (dataArr[i][uniqueKey] === data[uniqueKey]) {
+                    dataArr.splice(i, 1);
+                    return Promise.resolve({status: 0, msg: '修改成功'});
+                }
+            }
+            return Promise.reject({status: 403, msg: '未找到对应数据...'});
+        } else {
+            return Promise.reject({status: 404, msg: '未找到对应数据表...'});
+        }
     };
 
     module.exports = Mock;

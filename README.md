@@ -9,7 +9,7 @@ mock.js 是一个用于根据预设的环境变量，自动生成虚拟数据或
 新建文件夹在你的一个目录中并进入到该目录，打开git bash命令终端。
 
 ```javascript
-   git clone https://github.com/zyx871017/mock.js.git
+   npm install --save zyx_mock
 ```
 
 将里面的`api.js` `mock.js` 复制粘贴到你的项目的合适目录中。
